@@ -1,4 +1,6 @@
 ﻿using Liguria_Trasporti.Data;
+using Liguria_Trasporti.DTOs;
+using Liguria_Trasporti.Enums;
 using Liguria_Trasporti.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,5 +24,44 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
         }
         
         return employee;
+    }
+
+    public async Task<EmployeeResponseDto?> CreateEmployee(EmployeeRequestDto employeeRequest)
+    {
+        var employee = new Employee()
+        {
+            Id = Guid.NewGuid(),
+            Name = employeeRequest.Name,
+            Surname = employeeRequest.Surname,
+            Email = employeeRequest.Email,
+            Role = employeeRequest.Role,
+            DrivingLicenseCategory = employeeRequest.DrivingLicenseCategory,
+            AccountStatus = AccountStatus.Active,
+            OperationalStatus = EmployeeOperationalStatus.Active
+        };
+        
+        if (string.IsNullOrWhiteSpace(employeeRequest.Name))
+        {}
+
+        if (employee.Role is EmployeeRole.Driver)
+        {
+            employee.DrivingLicenseCategory = employeeRequest.DrivingLicenseCategory;
+        }
+
+        await _dbContext.AddAsync(employee);
+        await _dbContext.SaveChangesAsync();
+
+        var employeeResponse = new EmployeeResponseDto()
+        {
+            Name = employee.Name,
+            Surname = employee.Surname,
+            Email = employee.Email,
+            Role = employee.Role,
+            OperationalStatus = employee.OperationalStatus,
+            AccountStatus = employee.AccountStatus,
+            DrivingLicenseCategory = employee.DrivingLicenseCategory
+        };
+
+        return employeeResponse;
     }
 }

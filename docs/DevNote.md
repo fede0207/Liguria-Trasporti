@@ -47,6 +47,35 @@
     - inject the service through the constructor
     - use HTTP attributes such as [HttpGet]
 
+## Employee module checkpoint
+
+1. Employee entity:
+    - represents company users/workers in the MVP
+    - contains Id, Name, Surname, Email
+    - contains Role, OperationalStatus, AccountStatus
+    - contains nullable DrivingLicenseCategory because it applies only to drivers
+
+2. Employee enums:
+    - EmployeeRole models LogisticsOperator, ShippingManager, Driver
+    - EmployeeOperationalStatus models Active, Absent, Unavailable
+    - AccountStatus models Active, Disabled
+    - DrivingLicenseCategory models simple driving categories for MVP assignment checks
+
+3. EF Core registration:
+    - add DbSet<Employee> Employees in AppDbContext
+    - create a migration after adding the entity
+    - run dotnet ef database update to apply it locally
+
+4. Employee service/controller:
+    - IEmployeeService defines the operations exposed to the controller
+    - EmployeeService injects AppDbContext and queries Employees
+    - EmployeeController injects IEmployeeService
+
+5. Employee request DTO:
+    - request DTOs represent input from the client
+    - do not expose backend-controlled fields such as Id directly as client input
+    - later create separate DTOs for create, update, and response if their shape differs
+
 ## Scalar/OpenAPI setup
 
 1. Install package:
@@ -77,3 +106,7 @@
 
 5. Build blocked by running app:
     - if the executable is locked, stop the app from Rider or stop the process by id
+
+6. Mixing account status and operational status:
+    - AccountStatus decides whether the user can access the system
+    - OperationalStatus decides whether the employee is available for work/planning
