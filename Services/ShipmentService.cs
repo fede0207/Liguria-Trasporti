@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Liguria_Trasporti.Services;
 
-public class ShipmentService
+public class ShipmentService : IShipmentService
 {
     private readonly AppDbContext _dbContext;
     public ShipmentService(AppDbContext dbContext)

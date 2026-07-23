@@ -1,4 +1,5 @@
 using Liguria_Trasporti.Data;
+using Liguria_Trasporti.Services;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
@@ -10,6 +11,8 @@ builder.Services.AddOpenApi();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddScoped<IShipmentService, ShipmentService>();
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
@@ -20,5 +23,6 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
+app.MapControllers();
 app.UseHttpsRedirection();
 app.Run();

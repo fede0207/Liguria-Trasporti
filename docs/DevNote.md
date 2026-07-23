@@ -20,3 +20,60 @@
 5. Create migration:
     - dotnet ef migrations add InitialCreate
     - dotnet ef database update
+
+## Controller and services setup
+
+1. Create the service contract:
+    - define an interface, for example IShipmentService
+    - add the methods the controller needs, for example GetAllShipments()
+
+2. Create the service implementation:
+    - inject AppDbContext in the service constructor
+    - make the service implement the interface
+    - use EF Core async methods such as ToListAsync()
+
+3. Register the service in Program.cs:
+    - call AddScoped<IShipmentService, ShipmentService>()
+    - the concrete service must implement the interface
+
+4. Register and map controllers:
+    - call builder.Services.AddControllers()
+    - call app.MapControllers()
+    - MapControllers() should be outside the Development-only block
+
+5. Create the controller:
+    - use [ApiController]
+    - use [Route("api/[controller]")]
+    - inject the service through the constructor
+    - use HTTP attributes such as [HttpGet]
+
+## Scalar/OpenAPI setup
+
+1. Install package:
+    - Scalar.AspNetCore
+
+2. Register OpenAPI:
+    - call builder.Services.AddOpenApi()
+
+3. Map API docs only in development:
+    - call app.MapOpenApi()
+    - call app.MapScalarApiReference()
+
+## Common mistakes
+
+1. Empty using line:
+    - a line like `using` without a namespace breaks Program.cs parsing
+
+2. Service registration mismatch:
+    - AddScoped<IService, Service>() requires Service to implement IService
+
+3. Controllers registered but not mapped:
+    - AddControllers() registers MVC/controller services
+    - MapControllers() exposes attribute-routed controller endpoints
+
+4. Calling service methods incorrectly:
+    - call methods through the injected service
+    - do not call a service method as if it were a local controller method
+
+5. Build blocked by running app:
+    - if the executable is locked, stop the app from Rider or stop the process by id
