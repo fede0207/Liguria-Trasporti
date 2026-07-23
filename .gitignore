@@ -1,0 +1,121 @@
+# Build results
+
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+artifacts/
+
+# .NET generated files
+
+*.dll
+*.exe
+*.pdb
+*.cache
+*.deps.json
+*.runtimeconfig.json
+*.runtimeconfig.dev.json
+
+# User-specific files
+
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.rsuser
+
+# JetBrains Rider
+
+.idea/
+*.sln.iml
+
+# Visual Studio
+
+.vs/
+
+# Visual Studio Code
+
+.vscode/
+
+# NuGet
+
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+
+# Test results
+
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+coverage/
+coverage.*
+*.coverage
+*.coveragexml
+
+# Entity Framework temporary files
+
+efbundle
+efbundle.exe
+
+# Local databases
+
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.mdf
+*.ldf
+
+# Application settings with local secrets
+
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.local.json
+
+# Environment and secret files
+
+.env
+.env.*
+!.env.example
+secrets.json
+
+# Certificates and keys
+
+*.pfx
+*.p12
+*.cer
+*.crt
+*.key
+*.pem
+
+# Logs
+
+*.log
+
+# Docker local overrides
+
+docker-compose.override.yml
+
+# Operating system files
+
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
