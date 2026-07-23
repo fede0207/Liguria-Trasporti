@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Liguria_Trasporti.Enums;
 
 namespace Liguria_Trasporti.Models;
 
@@ -18,10 +19,8 @@ public class Shipment
     public Guid? AssignedVehicleId { get; set; }
     public Guid? DriverRouteId { get; set; }
     [MaxLength(255)]
-    public string? Note { get; set; } 
-    // enum priorita
-    // enum stato
-    // enum stato giro
-    
-    
+    public string? Note { get; set; }
+
+    public ShipmentPriority Priority { get; set; } = ShipmentPriority.Medium;
+    public ShipmentStatus Status { get; set; }
 }
