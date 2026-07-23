@@ -12,6 +12,7 @@ builder.Services.AddOpenApi();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
 builder.Services.AddScoped<IShipmentService, ShipmentService>();
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddControllers();
 
 var app = builder.Build();
