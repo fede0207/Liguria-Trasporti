@@ -10,19 +10,42 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
 {
     private readonly AppDbContext _dbContext = dbContext;
 
-    public async Task<IEnumerable<Employee>> GetAllEmployees()
+    public async Task<IEnumerable<EmployeeResponseDto>> GetAllEmployees()
     {
-        return await _dbContext.Employees.ToListAsync();
+        var list =  await _dbContext.Employees.ToListAsync();
+        var employees = list.Select(e => new EmployeeResponseDto()
+        {
+            Id = e.Id,
+            Name = e.Name,
+            Surname = e.Surname,
+            Email = e.Email,
+            Role = e.Role,
+            OperationalStatus = e.OperationalStatus,
+            AccountStatus = e.AccountStatus,
+            DrivingLicenseCategory = e.DrivingLicenseCategory
+        });
+        return employees;
     }
     
-    public async Task<Employee?> GetEmployeeById(Guid id)
+    public async Task<EmployeeResponseDto?> GetEmployeeById(Guid id)
     {
-        var employee = await _dbContext.Employees.FindAsync(id);
-        if (employee is null)
+        var resource = await _dbContext.Employees.FindAsync(id);
+        if (resource is null)
         {
             return null;
         }
-        
+
+        var employee = new EmployeeResponseDto()
+        {
+            Id = resource.Id,
+            Name = resource.Name,
+            Surname = resource.Surname,
+            Email = resource.Email,
+            Role = resource.Role,
+            OperationalStatus = resource.OperationalStatus,
+            AccountStatus = resource.AccountStatus,
+            DrivingLicenseCategory = resource.DrivingLicenseCategory
+        };
         return employee;
     }
 
@@ -31,17 +54,14 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
         var employee = new Employee()
         {
             Id = Guid.NewGuid(),
-            Name = employeeRequest.Name,
-            Surname = employeeRequest.Surname,
-            Email = employeeRequest.Email,
+            Name = employeeRequest.Name.Trim(),
+            Surname = employeeRequest.Surname.Trim(),
+            Email = employeeRequest.Email.Trim().ToLower(),
             Role = employeeRequest.Role,
             DrivingLicenseCategory = employeeRequest.DrivingLicenseCategory,
             AccountStatus = AccountStatus.Active,
             OperationalStatus = EmployeeOperationalStatus.Active
         };
-        
-        if (string.IsNullOrWhiteSpace(employeeRequest.Name))
-        {}
 
         if (employee.Role is EmployeeRole.Driver)
         {
@@ -53,6 +73,7 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
 
         var employeeResponse = new EmployeeResponseDto()
         {
+            Id = employee.Id,
             Name = employee.Name,
             Surname = employee.Surname,
             Email = employee.Email,

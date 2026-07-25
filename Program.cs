@@ -2,6 +2,8 @@ using Liguria_Trasporti.Data;
 using Liguria_Trasporti.Services;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 
 var builder = WebApplication.CreateBuilder(args);
 

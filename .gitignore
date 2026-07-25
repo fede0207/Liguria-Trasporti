@@ -88,6 +88,8 @@ appsettings.*.local.json
 .env.*
 !.env.example
 secrets.json
+*firebase-adminsdk*.json
+firebase-service-account*.json
 
 # Certificates and keys
 
