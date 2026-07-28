@@ -67,15 +67,30 @@ File principali:
 - `DTOs/EmployeeResponseDto.cs`
 - `Models/Employee.cs`
 
-L'utente ha aggiunto:
+Stato attuale:
 
 - `GET all`
 - `GET by id`
 - `POST create`
-- trim di `Name`, `Surname`, `Email` nel create
+- `PUT update`
+- `DELETE remove`
+- `CreatedAtRoute` nel create verso la route nominata `GetEmployeeById`
+- `204 NoContent` per update/delete riusciti
+- trim di `Name`, `Surname`, `Email` nel create/update
+- normalizzazione email con `ToLowerInvariant()`
+- patente obbligatoria nel create quando `Role` e' `Driver`
+- patente obbligatoria nell'update quando `Role` e' `Driver`
+- protezione `[Authorize]` su `GET by id`, `PUT` e `DELETE`
 - `[ApiController]` e route base sul controller
 
 Problemi/cleanup da fare sono documentati in `docs/NextFixes.md`.
+In particolare restano:
+
+- decidere se azzerare `DrivingLicenseCategory` quando il ruolo aggiornato non e' `Driver`;
+- sostituire `null`/`bool` dai service con un risultato applicativo esplicito;
+- aggiungere controllo email duplicata;
+- convertire gli enum come stringhe nell'API JSON;
+- introdurre log strutturati, probabilmente con Serilog.
 
 ## Promemoria prossima sessione
 

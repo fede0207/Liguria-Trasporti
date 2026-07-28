@@ -101,7 +101,14 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
         employee.Surname = employeeRequest.Surname.Trim();
         employee.Email = employeeRequest.Email.ToLowerInvariant().Trim();
         employee.Role = employeeRequest.Role;
-        employee.DrivingLicenseCategory = employeeRequest.DrivingLicenseCategory;
+        if (employee.Role is EmployeeRole.Driver)
+        {
+            employee.DrivingLicenseCategory = employeeRequest.DrivingLicenseCategory;
+            if (employee.DrivingLicenseCategory is null)
+            {
+                return false;
+            }
+        }
         await _dbContext.SaveChangesAsync();
         return true;
     }
@@ -113,7 +120,6 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
         {
             return false;
         }
-
         _dbContext.Employees.Remove(employee);
         await _dbContext.SaveChangesAsync();
         return true;
