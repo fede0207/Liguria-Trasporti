@@ -56,7 +56,7 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
             Id = Guid.NewGuid(),
             Name = employeeRequest.Name.Trim(),
             Surname = employeeRequest.Surname.Trim(),
-            Email = employeeRequest.Email.Trim().ToLower(),
+            Email = employeeRequest.Email.ToLowerInvariant().Trim(),
             Role = employeeRequest.Role,
             DrivingLicenseCategory = employeeRequest.DrivingLicenseCategory,
             AccountStatus = AccountStatus.Active,
@@ -66,6 +66,10 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
         if (employee.Role is EmployeeRole.Driver)
         {
             employee.DrivingLicenseCategory = employeeRequest.DrivingLicenseCategory;
+            if (employee.DrivingLicenseCategory is null)
+            {
+                return null;
+            }
         }
 
         await _dbContext.AddAsync(employee);
@@ -84,5 +88,34 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
         };
 
         return employeeResponse;
+    }
+
+    public async Task<bool> UpdateEmployee(Guid id, EmployeeRequestDto employeeRequest)
+    {
+        var employee = await _dbContext.Employees.FindAsync(id);
+        if (employee is null)
+        {
+            return false;
+        }
+        employee.Name = employeeRequest.Name.Trim();
+        employee.Surname = employeeRequest.Surname.Trim();
+        employee.Email = employeeRequest.Email.ToLowerInvariant().Trim();
+        employee.Role = employeeRequest.Role;
+        employee.DrivingLicenseCategory = employeeRequest.DrivingLicenseCategory;
+        await _dbContext.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> DeleteEmployee(Guid id)
+    {
+        var employee = await _dbContext.Employees.FindAsync(id);
+        if (employee is null)
+        {
+            return false;
+        }
+
+        _dbContext.Employees.Remove(employee);
+        await _dbContext.SaveChangesAsync();
+        return true;
     }
 }

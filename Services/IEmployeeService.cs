@@ -8,4 +8,6 @@ public interface IEmployeeService
     public Task<IEnumerable<EmployeeResponseDto>> GetAllEmployees();
     public Task<EmployeeResponseDto?> GetEmployeeById(Guid id);
     public Task<EmployeeResponseDto?> CreateEmployee(EmployeeRequestDto employeeRequest);
+    public Task<bool> UpdateEmployee(Guid id, EmployeeRequestDto employeeRequest);
+    public Task<bool> DeleteEmployee(Guid id);
 }

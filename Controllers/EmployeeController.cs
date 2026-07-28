@@ -1,5 +1,6 @@
 ﻿using Liguria_Trasporti.DTOs;
 using Liguria_Trasporti.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Liguria_Trasporti.Controllers;
@@ -19,10 +20,16 @@ public class EmployeeController(IEmployeeService employeeService) : ControllerBa
     [HttpPost]
     public async Task<ActionResult<EmployeeResponseDto?>> CreateEmployee(EmployeeRequestDto employeeRequest)
     {
-        return Ok(await _employeeService.CreateEmployee(employeeRequest));
+        var employee = await _employeeService.CreateEmployee(employeeRequest);
+        if (employee is null)
+        {
+            return BadRequest();
+        }
+        return CreatedAtRoute("GetEmployeeById", new {id = employee.Id}, employee );
     }
-
-    [HttpGet("{id:Guid}")]
+    
+    [Authorize]
+    [HttpGet("{id:Guid}", Name = "GetEmployeeById")]
     public async Task<ActionResult<EmployeeResponseDto?>> GetEmployeeById(Guid id)
     {
         var employee = await _employeeService.GetEmployeeById(id);
@@ -30,6 +37,30 @@ public class EmployeeController(IEmployeeService employeeService) : ControllerBa
         {
             return NotFound();
         }
-        return Created("{api/Employee/id}", employee);
+        return Ok(employee);
+    }
+
+    [Authorize]
+    [HttpPut("{id:Guid}")]
+    public async Task<ActionResult> UpdateEmployee(Guid id, EmployeeRequestDto employeeRequest)
+    {
+        var result = await _employeeService.UpdateEmployee(id, employeeRequest);
+        if (!result)
+        {
+            return NotFound();
+        }
+        return NoContent();
+    }
+    
+    [Authorize]
+    [HttpDelete("{id:Guid}")]
+    public async Task<ActionResult> RemoveEmployee(Guid id)
+    {
+        var result = await _employeeService.DeleteEmployee(id);
+        if (!result)
+        {
+            return NotFound();
+        }
+        return NoContent();
     }
 }
