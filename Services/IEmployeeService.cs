@@ -5,9 +5,9 @@ namespace Liguria_Trasporti.Services;
 
 public interface IEmployeeService
 {
-    public Task<IEnumerable<EmployeeResponseDto>> GetAllEmployees();
-    public Task<EmployeeResponseDto?> GetEmployeeById(Guid id);
-    public Task<EmployeeResponseDto?> CreateEmployee(EmployeeRequestDto employeeRequest);
-    public Task<bool> UpdateEmployee(Guid id, EmployeeRequestDto employeeRequest);
-    public Task<bool> DeleteEmployee(Guid id);
+    public Task<ServiceResult<IEnumerable<EmployeeResponseDto>>> GetAllEmployees();
+    public Task<ServiceResult<EmployeeResponseDto?>> GetEmployeeById(Guid id);
+    public Task<ServiceResult<EmployeeResponseDto>> CreateEmployee(EmployeeRequestDto employeeRequest);
+    public Task<ServiceResult<EmployeeResponseDto?>> UpdateEmployee(Guid id, EmployeeRequestDto employeeRequest);
+    public Task<ServiceResult<EmptyResponse>> DeleteEmployee(Guid id);
 }

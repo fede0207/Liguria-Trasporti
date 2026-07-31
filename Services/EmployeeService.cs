@@ -10,7 +10,7 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
 {
     private readonly AppDbContext _dbContext = dbContext;
 
-    public async Task<IEnumerable<EmployeeResponseDto>> GetAllEmployees()
+    public async Task<ServiceResult<IEnumerable<EmployeeResponseDto>>> GetAllEmployees()
     {
         var list =  await _dbContext.Employees.ToListAsync();
         var employees = list.Select(e => new EmployeeResponseDto()
@@ -24,15 +24,16 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
             AccountStatus = e.AccountStatus,
             DrivingLicenseCategory = e.DrivingLicenseCategory
         });
-        return employees;
+        
+        return ServiceResult<IEnumerable<EmployeeResponseDto>>.Ok(employees);
     }
     
-    public async Task<EmployeeResponseDto?> GetEmployeeById(Guid id)
+    public async Task<ServiceResult<EmployeeResponseDto?>> GetEmployeeById(Guid id)
     {
         var resource = await _dbContext.Employees.FindAsync(id);
         if (resource is null)
         {
-            return null;
+            return ServiceResult<EmployeeResponseDto?>.NotFound(null);
         }
 
         var employee = new EmployeeResponseDto()
@@ -46,10 +47,10 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
             AccountStatus = resource.AccountStatus,
             DrivingLicenseCategory = resource.DrivingLicenseCategory
         };
-        return employee;
+        return ServiceResult<EmployeeResponseDto?>.Ok(employee);
     }
 
-    public async Task<EmployeeResponseDto?> CreateEmployee(EmployeeRequestDto employeeRequest)
+    public async Task<ServiceResult<EmployeeResponseDto>> CreateEmployee(EmployeeRequestDto employeeRequest)
     {
         var employee = new Employee()
         {
@@ -62,13 +63,19 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
             AccountStatus = AccountStatus.Active,
             OperationalStatus = EmployeeOperationalStatus.Active
         };
-
+        
+        var mailExists = await _dbContext.Employees.AnyAsync(e => e.Email == employee.Email && e.Id != employee.Id);
+        if (mailExists)
+        {
+            return ServiceResult<EmployeeResponseDto>.Conflict(null!);
+        }
+        
         if (employee.Role is EmployeeRole.Driver)
         {
             employee.DrivingLicenseCategory = employeeRequest.DrivingLicenseCategory;
             if (employee.DrivingLicenseCategory is null)
             {
-                return null;
+                return ServiceResult<EmployeeResponseDto>.ValidationError();
             }
         }
 
@@ -86,42 +93,58 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
             AccountStatus = employee.AccountStatus,
             DrivingLicenseCategory = employee.DrivingLicenseCategory
         };
-
-        return employeeResponse;
+        return ServiceResult<EmployeeResponseDto>.Ok(employeeResponse);
     }
 
-    public async Task<bool> UpdateEmployee(Guid id, EmployeeRequestDto employeeRequest)
+    public async Task<ServiceResult<EmployeeResponseDto?>> UpdateEmployee(Guid id, EmployeeRequestDto employeeRequest)
     {
         var employee = await _dbContext.Employees.FindAsync(id);
         if (employee is null)
         {
-            return false;
+            return ServiceResult<EmployeeResponseDto?>.NotFound(null);
         }
         employee.Name = employeeRequest.Name.Trim();
         employee.Surname = employeeRequest.Surname.Trim();
         employee.Email = employeeRequest.Email.ToLowerInvariant().Trim();
         employee.Role = employeeRequest.Role;
+        
+        var mailExists = await _dbContext.Employees.AnyAsync(e => e.Email == employee.Email && e.Id != employee.Id);
+        if (mailExists)
+        {
+            return ServiceResult<EmployeeResponseDto?>.Conflict(null);
+        }
+        
         if (employee.Role is EmployeeRole.Driver)
         {
             employee.DrivingLicenseCategory = employeeRequest.DrivingLicenseCategory;
             if (employee.DrivingLicenseCategory is null)
             {
-                return false;
+                return ServiceResult<EmployeeResponseDto?>.ValidationError();
             }
         }
         await _dbContext.SaveChangesAsync();
-        return true;
+        return ServiceResult<EmployeeResponseDto?>.Ok(new EmployeeResponseDto()
+        {
+            Id = employee.Id,
+            Name = employee.Name,
+            Surname = employee.Surname,
+            Email = employee.Email,
+            Role = employee.Role,
+            OperationalStatus = employee.OperationalStatus,
+            AccountStatus = employee.AccountStatus,
+            DrivingLicenseCategory = employee.DrivingLicenseCategory
+        });
     }
 
-    public async Task<bool> DeleteEmployee(Guid id)
+    public async Task<ServiceResult<EmptyResponse>> DeleteEmployee(Guid id)
     {
         var employee = await _dbContext.Employees.FindAsync(id);
         if (employee is null)
         {
-            return false;
+            return ServiceResult<EmptyResponse>.NotFound(null!);
         }
         _dbContext.Employees.Remove(employee);
         await _dbContext.SaveChangesAsync();
-        return true;
+        return ServiceResult<EmptyResponse>.Ok(null!);
     }
 }

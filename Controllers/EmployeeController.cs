@@ -1,4 +1,5 @@
 ﻿using Liguria_Trasporti.DTOs;
+using Liguria_Trasporti.Enums;
 using Liguria_Trasporti.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,30 +15,31 @@ public class EmployeeController(IEmployeeService employeeService) : ControllerBa
     [HttpGet]
     public async Task<ActionResult<IEnumerable<EmployeeResponseDto>>> GetAllEmployees()
     {
-        return Ok(await _employeeService.GetAllEmployees());
+        var result = await _employeeService.GetAllEmployees();
+        return Ok(result.Data);
     }
 
     [HttpPost]
-    public async Task<ActionResult<EmployeeResponseDto?>> CreateEmployee(EmployeeRequestDto employeeRequest)
+    public async Task<ActionResult<EmployeeResponseDto>> CreateEmployee(EmployeeRequestDto employeeRequest)
     {
-        var employee = await _employeeService.CreateEmployee(employeeRequest);
-        if (employee is null)
+        var result = await _employeeService.CreateEmployee(employeeRequest);
+        if (result.Status is ServiceResultStatus.ValidationError)
         {
             return BadRequest();
         }
-        return CreatedAtRoute("GetEmployeeById", new {id = employee.Id}, employee );
+        return CreatedAtRoute("GetEmployeeById", new {id = result.Data!.Id}, result.Data );
     }
     
     [Authorize]
     [HttpGet("{id:Guid}", Name = "GetEmployeeById")]
     public async Task<ActionResult<EmployeeResponseDto?>> GetEmployeeById(Guid id)
     {
-        var employee = await _employeeService.GetEmployeeById(id);
-        if (employee is null)
+        var result = await _employeeService.GetEmployeeById(id);
+        if (result.Status is ServiceResultStatus.NotFound)
         {
             return NotFound();
         }
-        return Ok(employee);
+        return Ok(result.Data);
     }
 
     [Authorize]
@@ -45,11 +47,13 @@ public class EmployeeController(IEmployeeService employeeService) : ControllerBa
     public async Task<ActionResult> UpdateEmployee(Guid id, EmployeeRequestDto employeeRequest)
     {
         var result = await _employeeService.UpdateEmployee(id, employeeRequest);
-        if (!result)
+        return result.Status switch
         {
-            return NotFound();
-        }
-        return NoContent();
+            ServiceResultStatus.NotFound => NotFound(),
+            ServiceResultStatus.Conflict => Conflict(),
+            ServiceResultStatus.ValidationError => BadRequest(),
+            _ => NoContent()
+        };
     }
     
     [Authorize]
@@ -57,10 +61,10 @@ public class EmployeeController(IEmployeeService employeeService) : ControllerBa
     public async Task<ActionResult> RemoveEmployee(Guid id)
     {
         var result = await _employeeService.DeleteEmployee(id);
-        if (!result)
+        return result.Status switch
         {
-            return NotFound();
-        }
-        return NoContent();
+            ServiceResultStatus.NotFound => NotFound(),
+            _ => NoContent()
+        };
     }
 }
