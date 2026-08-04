@@ -3,10 +3,11 @@ using Liguria_Trasporti.Data;
 using Liguria_Trasporti.DTOs;
 using Liguria_Trasporti.Enums;
 using Liguria_Trasporti.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace Liguria_Trasporti.Services;
-
+[Authorize(Roles = "EmployeeManager")]
 public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) : IEmployeeService
 {
     private readonly AppDbContext _dbContext = dbContext;

@@ -8,7 +8,7 @@ namespace Liguria_Trasporti.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-
+[Authorize(Roles = "EmployeeManager")]
 public class EmployeeController(IEmployeeService employeeService) : ControllerBase
 {
     private readonly IEmployeeService _employeeService = employeeService;

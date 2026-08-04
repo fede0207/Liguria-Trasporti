@@ -1,3 +1,6 @@
+using FirebaseAdmin;
+using FirebaseAdmin.Auth;
+using Google.Apis.Auth.OAuth2;
 using Liguria_Trasporti.Data;
 using Liguria_Trasporti.Services;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +23,16 @@ if (string.IsNullOrWhiteSpace(configurationProjectId))
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
 builder.Services.AddScoped<IShipmentService, ShipmentService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+
+var firebaseCredPath = Path.Combine(AppContext.BaseDirectory, "liguriatrasporti-ca606-firebase-adminsdk-fbsvc-bd27571915.json");
+if (!File.Exists(firebaseCredPath))
+{
+    throw new Exception($"Firebase credential file not found at {firebaseCredPath}");
+}
+var credential = GoogleCredential.FromFile(firebaseCredPath);
+FirebaseApp.Create(new AppOptions { Credential = credential, ProjectId = configurationProjectId });
+builder.Services.AddSingleton(FirebaseAuth.DefaultInstance);
+
 builder.Services.AddControllers();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
