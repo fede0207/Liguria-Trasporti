@@ -4,5 +4,6 @@ public enum EmployeeRole
 {
     Driver,
     LogisticOperator,
-    ShippingManager
+    ShippingManager,
+    EmployeeManager
 }

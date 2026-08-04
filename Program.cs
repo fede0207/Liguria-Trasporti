@@ -26,6 +26,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     options.Authority = $"https://securetoken.google.com/{configurationProjectId}";
     options.TokenValidationParameters.ValidIssuer = $"https://securetoken.google.com/{configurationProjectId}";
     options.TokenValidationParameters.ValidAudience = configurationProjectId;
+    options.Events.OnTokenValidated = context =>
+    {
+        // Additional validation can be done here if needed
+        var roleClaim = context.Principal.Claims.FirstOrDefault(c => c.Type == "role");
+        if (roleClaim != null)
+        {
+            var identity = context.Principal.Identity as System.Security.Claims.ClaimsIdentity;
+            identity?.AddClaim(new System.Security.Claims.Claim("role", roleClaim.Value));
+        }
+        
+        return Task.CompletedTask;
+    };
 });
 builder.Services.AddAuthorization();
 

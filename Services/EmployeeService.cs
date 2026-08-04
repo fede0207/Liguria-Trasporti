@@ -1,4 +1,5 @@
-﻿using Liguria_Trasporti.Data;
+﻿using FirebaseAdmin.Auth;
+using Liguria_Trasporti.Data;
 using Liguria_Trasporti.DTOs;
 using Liguria_Trasporti.Enums;
 using Liguria_Trasporti.Models;
@@ -6,9 +7,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Liguria_Trasporti.Services;
 
-public class EmployeeService(AppDbContext dbContext) : IEmployeeService
+public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) : IEmployeeService
 {
     private readonly AppDbContext _dbContext = dbContext;
+    private readonly FirebaseAuth _firebaseAuth = firebaseAuth;
 
     public async Task<ServiceResult<IEnumerable<EmployeeResponseDto>>> GetAllEmployees()
     {
@@ -82,6 +84,15 @@ public class EmployeeService(AppDbContext dbContext) : IEmployeeService
         await _dbContext.AddAsync(employee);
         await _dbContext.SaveChangesAsync();
 
+        var userRecord = await _firebaseAuth.CreateUserAsync(new UserRecordArgs()
+        {
+            Email = employee.Email,
+            Password = "temporary123."
+        });
+        
+        var claims = new Dictionary<string, object> {{"role", employee.Role.ToString()}};
+        await _firebaseAuth.SetCustomUserClaimsAsync(userRecord.Uid, claims);
+            
         var employeeResponse = new EmployeeResponseDto()
         {
             Id = employee.Id,

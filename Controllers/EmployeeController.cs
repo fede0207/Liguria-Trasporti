@@ -8,6 +8,7 @@ namespace Liguria_Trasporti.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+
 public class EmployeeController(IEmployeeService employeeService) : ControllerBase
 {
     private readonly IEmployeeService _employeeService = employeeService;
@@ -29,8 +30,7 @@ public class EmployeeController(IEmployeeService employeeService) : ControllerBa
         }
         return CreatedAtRoute("GetEmployeeById", new {id = result.Data!.Id}, result.Data );
     }
-    
-    [Authorize]
+
     [HttpGet("{id:Guid}", Name = "GetEmployeeById")]
     public async Task<ActionResult<EmployeeResponseDto?>> GetEmployeeById(Guid id)
     {
@@ -42,7 +42,6 @@ public class EmployeeController(IEmployeeService employeeService) : ControllerBa
         return Ok(result.Data);
     }
 
-    [Authorize]
     [HttpPut("{id:Guid}")]
     public async Task<ActionResult> UpdateEmployee(Guid id, EmployeeRequestDto employeeRequest)
     {
@@ -56,7 +55,6 @@ public class EmployeeController(IEmployeeService employeeService) : ControllerBa
         };
     }
     
-    [Authorize]
     [HttpDelete("{id:Guid}")]
     public async Task<ActionResult> RemoveEmployee(Guid id)
     {

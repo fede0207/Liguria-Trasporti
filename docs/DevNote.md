@@ -113,6 +113,150 @@ builder.Services.AddScoped<IShipmentService, ShipmentService>();
 
 La classe concreta deve implementare l'interfaccia registrata.
 
+### ServiceResult pattern
+
+I servizi ritornano `ServiceResult<T>` per comunicare **status**, **data** e **error message** in modo strutturato.
+
+#### Struttura di ServiceResult
+
+```csharp
+public sealed class ServiceResult<T>
+{
+    public bool Success { get; init; }
+    public ServiceResultStatus Status { get; init; }
+    public string? ErrorMessage { get; init; }
+    public T? Data { get; init; }
+    
+    public static ServiceResult<T> Ok(T data) { ... }
+    public static ServiceResult<T> NotFound(T data) { ... }
+    public static ServiceResult<T> ValidationError(T data) { ... }
+    public static ServiceResult<T> Conflict(T data) { ... }
+    public static ServiceResult<T> Unauthorized(T data) { ... }
+    public static ServiceResult<T> Forbidden(T data) { ... }
+}
+```
+
+#### Uso nei servizi
+
+Nel servizio, usa i metodi statici per ritornare risultati:
+
+```csharp
+// Successo
+return ServiceResult<EmployeeResponseDto>.Ok(employeeData);
+
+// Non trovato
+return ServiceResult<EmployeeResponseDto?>.NotFound(null);
+
+// Conflitto (es. email duplicata)
+return ServiceResult<EmployeeResponseDto>.Conflict(null!);
+
+// Errore di validazione
+return ServiceResult<EmployeeResponseDto>.ValidationError();
+```
+
+#### Gestione nel controller
+
+Nel controller, controlla lo `Status` e mappa verso HTTP:
+
+```csharp
+var result = await _employeeService.CreateEmployee(request);
+
+return result.Status switch
+{
+    ServiceResultStatus.Success => CreatedAtRoute(..., result.Data),
+    ServiceResultStatus.ValidationError => BadRequest(),
+    ServiceResultStatus.Conflict => Conflict(),
+    _ => BadRequest("Unknown error")
+};
+```
+
+## 5.A Autenticazione e Autorizzazione con Firebase
+
+### Flusso di creazione dipendente con Firebase Auth
+
+Quando crei un nuovo dipendente, devi:
+
+1. **Salvare l'Employee nel database** (EF Core)
+2. **Creare l'utente su Firebase** con email e password temporanea
+3. **Assegnare il custom claim** `role` con il ruolo aziendale (`EmployeeManager`, `Driver`, ecc.)
+
+Nel servizio:
+
+```csharp
+public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) : IEmployeeService
+{
+    public async Task<ServiceResult<EmployeeResponseDto>> CreateEmployee(EmployeeRequestDto request)
+    {
+        // 1. Validazioni e salvataggio nel DB
+        var employee = new Employee { ... };
+        await _dbContext.AddAsync(employee);
+        await _dbContext.SaveChangesAsync();
+        
+        // 2. Creare l'utente Firebase
+        var userRecord = await _firebaseAuth.CreateUserAsync(new UserRecordArgs()
+        {
+            Email = employee.Email,
+            Password = "temporary_password_123"  // L'utente la cambierà al primo accesso
+        });
+        
+        // 3. Assegnare il ruolo come custom claim
+        var claims = new Dictionary<string, object> { { "role", employee.Role.ToString() } };
+        await _firebaseAuth.SetCustomUserClaimsAsync(userRecord.Uid, claims);
+        
+        return ServiceResult<EmployeeResponseDto>.Ok(employeeResponse);
+    }
+}
+```
+
+### Mapping dei custom claims in Program.cs
+
+Nel `Program.cs`, configura `OnTokenValidated` per leggere il custom claim `role` dal token Firebase e aggiungerlo come Role di ASP.NET Core:
+
+```csharp
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = $"https://securetoken.google.com/{projectId}";
+        options.TokenValidationParameters.ValidIssuer = $"https://securetoken.google.com/{projectId}";
+        options.TokenValidationParameters.ValidAudience = projectId;
+        
+        options.Events.OnTokenValidated = context =>
+        {
+            // Leggi il custom claim "role" dal token Firebase
+            var roleClaim = context.Principal.Claims.FirstOrDefault(c => c.Type == "role");
+            if (roleClaim != null)
+            {
+                // Converti il claim in un Role che ASP.NET Core capisce
+                var identity = context.Principal.Identity as ClaimsIdentity;
+                identity?.AddClaim(new Claim(ClaimTypes.Role, roleClaim.Value));
+            }
+            return Task.CompletedTask;
+        };
+    });
+```
+
+### Proteggere gli endpoint per ruolo
+
+Nel controller, usa `[Authorize(Roles = "...")]`:
+
+```csharp
+[ApiController]
+[Route("api/[controller]")]
+[Authorize(Roles = "EmployeeManager")]
+public class EmployeeController : ControllerBase { ... }
+```
+
+Solo utenti con il ruolo `EmployeeManager` potranno accedere agli endpoint di questo controller.
+
+#### Scelta del tipo generico T
+
+- **Se devi ritornare dati:** `ServiceResult<EmployeeResponseDto>` — Usa il DTO della risposta
+- **Se non devi ritornare dati:** `ServiceResult<EmptyResponse>` — Usa una classe vuota per operazioni che ritornano `NoContent()`
+- **Esempi:**
+  - POST create → `ServiceResult<EmployeeResponseDto>` (serve l'ID per `CreatedAtRoute`)
+  - PUT update → `ServiceResult<EmptyResponse>` (ritorna `NoContent()`)
+  - DELETE → `ServiceResult<EmptyResponse>` (ritorna `NoContent()`)
+
 ## 5. Controller e API
 
 ### Registrazione controller
