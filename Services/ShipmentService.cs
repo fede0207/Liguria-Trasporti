@@ -62,8 +62,6 @@ public class ShipmentService(AppDbContext dbContext) : IShipmentService
             DeliveredAt = shipmentRequest.DeliveredAt,
             ProposedDriverId = shipmentRequest.ProposedDriverId,
             ProposedVehicleId = shipmentRequest.ProposedVehicleId,
-            AssignedDriverId = shipmentRequest.AssignedDriverId,
-            AssignedVehicleId = shipmentRequest.AssignedVehicleId,
             DriverRouteId = shipmentRequest.DriverRouteId,
             Note = shipmentRequest.Note,
             Priority = shipmentRequest.Priority,
@@ -83,6 +81,65 @@ public class ShipmentService(AppDbContext dbContext) : IShipmentService
             DeliveredAt = shipment.DeliveredAt,
             ProposedDriverId = shipment.ProposedDriverId,
             ProposedVehicleId = shipment.ProposedVehicleId,
+            DriverRouteId = shipment.DriverRouteId,
+            Note = shipment.Note,
+            Priority = shipment.Priority,
+            Status = shipment.Status
+        };
+
+        return ServiceResult<ShipmentResponseDto>.Ok(response);
+    }
+
+    public async Task<ServiceResult<ShipmentResponseDto>> ValidateShipment(Guid shipmentId, ValidateShipmentRequestDto shipmentRequest,
+        string userRole)
+    {
+        if (!CanValidateShipment(userRole))
+        {
+            return ServiceResult<ShipmentResponseDto>.Unauthorized(null!);
+        }
+        
+        var shipment = await _dbContext.Shipments.FindAsync(shipmentId);
+        if (shipment is null)
+        {
+            return ServiceResult<ShipmentResponseDto>.NotFound(null!);
+        }
+        if (shipment.Status is not ShipmentStatus.InPlanning)
+        {
+            return ServiceResult<ShipmentResponseDto>.ValidationError();
+        }
+
+        if (!ValidateDriver(shipmentRequest.AssignedDriverId))
+        {
+            return ServiceResult<ShipmentResponseDto>.ValidationError();
+        }
+
+        if (!ValidateVehicle(shipmentRequest.AssignedVehicleId))
+        {
+            return ServiceResult<ShipmentResponseDto>.ValidationError();
+        }
+        
+        var driver = await _dbContext.Employees.FindAsync(shipmentRequest.AssignedDriverId);
+        if (driver is null || driver.Role is not EmployeeRole.Driver)
+        {
+            return ServiceResult<ShipmentResponseDto>.NotFound(null!);
+        }
+        
+        shipment.AssignedDriverId = shipmentRequest.AssignedDriverId;
+        shipment.AssignedVehicleId = shipmentRequest.AssignedVehicleId;
+        shipment.Status = ShipmentStatus.Planned;
+        
+        await _dbContext.SaveChangesAsync();
+
+        var response = new ShipmentResponseDto()
+        {
+            Id = shipment.Id,
+            CustomerId = shipment.CustomerId,
+            OriginAddressId = shipment.OriginAddressId,
+            DestinationAddressId = shipment.DestinationAddressId,
+            PlannedDeliveryDate = shipment.PlannedDeliveryDate,
+            DeliveredAt = shipment.DeliveredAt,
+            ProposedDriverId = shipment.ProposedDriverId,
+            ProposedVehicleId = shipment.ProposedVehicleId,
             AssignedDriverId = shipment.AssignedDriverId,
             AssignedVehicleId = shipment.AssignedVehicleId,
             DriverRouteId = shipment.DriverRouteId,
@@ -90,7 +147,7 @@ public class ShipmentService(AppDbContext dbContext) : IShipmentService
             Priority = shipment.Priority,
             Status = shipment.Status
         };
-
+        
         return ServiceResult<ShipmentResponseDto>.Ok(response);
     }
     
@@ -104,8 +161,38 @@ public class ShipmentService(AppDbContext dbContext) : IShipmentService
             }
             return true;
         }
-
         return false;
+    }
+
+    private bool CanValidateShipment(string userRole)
+    {
+        if (Enum.TryParse<EmployeeRole>(userRole, true, out var role))
+        {
+            if (role is not EmployeeRole.ShippingManager)
+            {
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+    
+    private bool ValidateDriver(Guid? driverId)
+    {
+        if (!driverId.HasValue || driverId == Guid.Empty)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    private bool ValidateVehicle(Guid? vehicleId)
+    {
+        if (!vehicleId.HasValue || vehicleId == Guid.Empty)
+        {
+            return false;
+        }
+        return true;
     }
 }
 

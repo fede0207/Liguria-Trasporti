@@ -8,6 +8,7 @@ namespace Liguria_Trasporti.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "LogisticOperator, ShippingManager")]
 public class ShipmentController(IShipmentService shipmentService) : ControllerBase
 {
     private readonly IShipmentService _shipmentService = shipmentService;
