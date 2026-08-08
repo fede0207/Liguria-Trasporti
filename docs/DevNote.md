@@ -248,6 +248,74 @@ public class EmployeeController : ControllerBase { ... }
 
 Solo utenti con il ruolo `EmployeeManager` potranno accedere agli endpoint di questo controller.
 
+### Divisione responsabilità: Ruoli e Logica di Business
+
+**Principio:** I ruoli servono a due scopi diversi, che richiedono due approcci diversi.
+
+#### 1. Creare utente e assegnare ruolo → Service
+
+Quando crei un nuovo dipendente, il servizio deve:
+- Salvare l'Employee nel database
+- Creare l'utente su Firebase
+- Assegnare il ruolo come custom claim
+
+**Non devi** sapere chi sta facendo la richiesta. È una semplice creazione di risorsa.
+
+#### 2. Verificare permessi per transizioni di stato → Controller + Service
+
+Quando un utente esegue un'azione che dipende dal suo ruolo (es. approvare una spedizione), la responsabilità è divisa:
+
+**Nel Controller:**
+```csharp
+[HttpPut("{id:Guid}")]
+[Authorize]
+public async Task<ActionResult> UpdateShipment(Guid id, UpdateShipmentRequest request)
+{
+    // 1. Estrai il ruolo dai claims dell'utente autenticato
+    var userRoleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+    
+    // 2. Passa il ruolo al service
+    var result = await _shipmentService.UpdateShipmentStatus(id, request.NewStatus, userRoleClaim);
+    
+    // 3. Gestisci il risultato
+    return result.Status switch { ... };
+}
+```
+
+**Nel Service:**
+```csharp
+public async Task<ServiceResult<EmptyResponse>> UpdateShipmentStatus(Guid id, ShipmentStatus newStatus, string userRole)
+{
+    var shipment = await _dbContext.Shipments.FindAsync(id);
+    if (shipment is null)
+        return ServiceResult<EmptyResponse>.NotFound(null!);
+    
+    // Verificare se la transizione è permessa per questo ruolo
+    if (!IsTransitionAllowed(shipment.Status, newStatus, userRole))
+        return ServiceResult<EmptyResponse>.Forbidden(null!);
+    
+    // Aggiornare lo stato
+    shipment.Status = newStatus;
+    await _dbContext.SaveChangesAsync();
+    
+    return ServiceResult<EmptyResponse>.Ok(null!);
+}
+
+private bool IsTransitionAllowed(ShipmentStatus current, ShipmentStatus next, string userRole)
+{
+    // Esempio: Solo ShippingManager può mettere in Pianificata
+    if (next == ShipmentStatus.Pianificata && userRole != "ShippingManager")
+        return false;
+    
+    // Aggiungere altre regole di transizione
+    return true;
+}
+```
+
+**Riassunto:**
+- **Service**: Conosce la logica aziendale (chi può fare cosa)
+- **Controller**: Conosce l'utente (estrae il ruolo dai claims) e lo comunica al service
+
 #### Scelta del tipo generico T
 
 - **Se devi ritornare dati:** `ServiceResult<EmployeeResponseDto>` — Usa il DTO della risposta

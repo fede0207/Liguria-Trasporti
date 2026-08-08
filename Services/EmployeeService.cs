@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace Liguria_Trasporti.Services;
-[Authorize(Roles = "EmployeeManager")]
+[Authorize]
 public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) : IEmployeeService
 {
     private readonly AppDbContext _dbContext = dbContext;
