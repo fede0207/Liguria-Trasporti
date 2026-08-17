@@ -11,10 +11,9 @@ Questo file serve a riprendere il lavoro senza perdere contesto dopo chiusura ID
 
 ## Database
 
-- Container SQL Server attivo usato localmente: `GameDev`
-- Porta esposta: `localhost,1433`
-- Database corretto per questo progetto: `LiguriaTrasportiDb`
-- Database da non usare per questo progetto: `GameDevDb`
+- Container dedicato: `liguria-trasporti-sqlserver` (gestito da `docker-compose.yml` nella root del progetto)
+- Porta esposta: `localhost:1433`
+- Database: `LiguriaTrasportiDb`
 - User secret corretto:
 
   ```text
@@ -23,27 +22,19 @@ Questo file serve a riprendere il lavoro senza perdere contesto dopo chiusura ID
 
 ## Stato database
 
-Le migration del progetto Liguria sono state applicate a `LiguriaTrasportiDb`.
+Tutte le migration sono applicate a `LiguriaTrasportiDb`.
 
-Tabelle attese in `LiguriaTrasportiDb`:
+Tabelle presenti:
 
 - `__EFMigrationsHistory`
-- `Employees`
+- `Employees` (con `FirebaseId`)
 - `Shipments`
 
-Migration attese:
+Per avviare il container:
 
-- `20260723125822_InitiaCreate`
-- `20260723150025_CreateEmployees`
-
-Nota importante: in una sessione precedente le migration erano state applicate per errore a `GameDevDb`.
-La pulizia e' gia' stata fatta rimuovendo solo:
-
-- `dbo.Employees`
-- `dbo.Shipments`
-- righe Liguria in `dbo.__EFMigrationsHistory`
-
-Non toccare `GameDevDb`: appartiene a un altro progetto.
+```bash
+docker compose up -d
+```
 
 ## Decisioni tecniche prese
 

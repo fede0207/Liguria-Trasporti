@@ -1,4 +1,4 @@
-@Liguria_Trasporti_HostAddress = http://localhost:5121
+@Liguria_Trasporti_HostAddress = http://localhost:5121/Scalar
 
 GET {{Liguria_Trasporti_HostAddress}}/weatherforecast/
 Accept: application/json

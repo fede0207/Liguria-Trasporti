@@ -1,6 +1,7 @@
-﻿using Liguria_Trasporti.DTOs;
+﻿using System.Security.Claims;
+using Liguria_Trasporti.DTOs;
 using Liguria_Trasporti.Enums;
-using Liguria_Trasporti.Services;
+using Liguria_Trasporti.Services.Employers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,11 +20,13 @@ public class EmployeeController(IEmployeeService employeeService) : ControllerBa
         var result = await _employeeService.GetAllEmployees();
         return Ok(result.Data);
     }
-
+    
     [HttpPost]
     public async Task<ActionResult<EmployeeResponseDto>> CreateEmployee(EmployeeRequestDto employeeRequest)
     {
-        var result = await _employeeService.CreateEmployee(employeeRequest);
+        var nameIdentifier =  User.FindFirstValue(ClaimTypes.NameIdentifier);
+        
+        var result = await _employeeService.CreateEmployee(employeeRequest, nameIdentifier);
         if (result.Status is ServiceResultStatus.Conflict)
         {
             return Conflict();

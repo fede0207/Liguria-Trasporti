@@ -1,6 +1,6 @@
 ﻿using Liguria_Trasporti.DTOs;
 using Liguria_Trasporti.Models;
-namespace Liguria_Trasporti.Services;
+namespace Liguria_Trasporti.Services.Shipments;
 
 
 public interface IShipmentService

@@ -1,7 +1,7 @@
 ﻿using Liguria_Trasporti.DTOs;
 using Liguria_Trasporti.Enums;
 using Microsoft.AspNetCore.Mvc;
-using Liguria_Trasporti.Services;
+using Liguria_Trasporti.Services.Shipments;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Liguria_Trasporti.Controllers;

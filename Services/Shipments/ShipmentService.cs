@@ -4,7 +4,7 @@ using Liguria_Trasporti.Enums;
 using Liguria_Trasporti.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Liguria_Trasporti.Services;
+namespace Liguria_Trasporti.Services.Shipments;
 
 public class ShipmentService(AppDbContext dbContext) : IShipmentService
 {

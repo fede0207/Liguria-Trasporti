@@ -6,6 +6,7 @@ namespace Liguria_Trasporti.Models;
 public class Employee
 {
     public Guid Id { get; set; }
+    public string? FirebaseId { get; set; } 
     [MaxLength(50)]
     public string Name { get; set; } = string.Empty;
     [MaxLength(50)]

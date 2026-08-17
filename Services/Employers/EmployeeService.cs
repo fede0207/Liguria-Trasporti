@@ -5,7 +5,7 @@ using Liguria_Trasporti.Enums;
 using Liguria_Trasporti.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Liguria_Trasporti.Services;
+namespace Liguria_Trasporti.Services.Employers;
 
 public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) : IEmployeeService
 {
@@ -52,11 +52,12 @@ public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) 
         return ServiceResult<EmployeeResponseDto?>.Ok(employee);
     }
 
-    public async Task<ServiceResult<EmployeeResponseDto>> CreateEmployee(EmployeeRequestDto employeeRequest)
+    public async Task<ServiceResult<EmployeeResponseDto>> CreateEmployee(EmployeeRequestDto employeeRequest, string nameIdentifier)
     {
         var employee = new Employee()
         {
             Id = Guid.NewGuid(),
+            FirebaseId = nameIdentifier,
             Name = employeeRequest.Name.Trim(),
             Surname = employeeRequest.Surname.Trim(),
             Email = employeeRequest.Email.ToLowerInvariant().Trim(),
