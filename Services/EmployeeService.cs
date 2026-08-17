@@ -147,6 +147,11 @@ public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) 
                 return ServiceResult<EmployeeResponseDto?>.ValidationError();
             }
         }
+        else
+        {
+            employee.DrivingLicenseCategory = null;
+        }
+        
         await _dbContext.SaveChangesAsync();
         return ServiceResult<EmployeeResponseDto?>.Ok(new EmployeeResponseDto()
         {
