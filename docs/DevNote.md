@@ -250,7 +250,7 @@ Solo utenti con il ruolo `EmployeeManager` potranno accedere agli endpoint di qu
 
 ### Divisione responsabilità: Ruoli e Logica di Business
 
-**Principio:** I ruoli servono a due scopi diversi, che richiedono due approcci diversi.
+**Principio:** Autorizzazione nel controller, logica di business nel service.
 
 #### 1. Creare utente e assegnare ruolo → Service
 
@@ -261,60 +261,41 @@ Quando crei un nuovo dipendente, il servizio deve:
 
 **Non devi** sapere chi sta facendo la richiesta. È una semplice creazione di risorsa.
 
-#### 2. Verificare permessi per transizioni di stato → Controller + Service
+#### 2. Controllare chi può fare cosa → solo Controller
 
-Quando un utente esegue un'azione che dipende dal suo ruolo (es. approvare una spedizione), la responsabilità è divisa:
+L'autorizzazione per ruolo va gestita tramite `[Authorize(Roles = "...")]` sul controller o sull'action specifica. Il framework blocca la richiesta **prima** di entrare nel metodo se il ruolo non corrisponde — il service non viene mai chiamato e non ha bisogno di conoscere il ruolo.
 
-**Nel Controller:**
 ```csharp
-[HttpPut("{id:Guid}")]
-[Authorize]
-public async Task<ActionResult> UpdateShipment(Guid id, UpdateShipmentRequest request)
+[ApiController]
+[Route("api/[controller]")]
+[Authorize(Roles = "LogisticOperator,ShippingManager")]  // gate generale
+public class ShipmentController : ControllerBase
 {
-    // 1. Estrai il ruolo dai claims dell'utente autenticato
-    var userRoleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
-    
-    // 2. Passa il ruolo al service
-    var result = await _shipmentService.UpdateShipmentStatus(id, request.NewStatus, userRoleClaim);
-    
-    // 3. Gestisci il risultato
-    return result.Status switch { ... };
+    [HttpPatch("{shipmentId:Guid}/status")]
+    [Authorize(Roles = "ShippingManager")]  // gate più restrittivo sull'action
+    public async Task<IActionResult> ValidateShipmentStatus(...)
+    {
+        var result = await _shipmentService.ValidateShipment(shipmentId, request);
+        // nessun check ruolo qui: ci ha già pensato [Authorize]
+    }
 }
 ```
 
-**Nel Service:**
-```csharp
-public async Task<ServiceResult<EmptyResponse>> UpdateShipmentStatus(Guid id, ShipmentStatus newStatus, string userRole)
-{
-    var shipment = await _dbContext.Shipments.FindAsync(id);
-    if (shipment is null)
-        return ServiceResult<EmptyResponse>.NotFound(null!);
-    
-    // Verificare se la transizione è permessa per questo ruolo
-    if (!IsTransitionAllowed(shipment.Status, newStatus, userRole))
-        return ServiceResult<EmptyResponse>.Forbidden(null!);
-    
-    // Aggiornare lo stato
-    shipment.Status = newStatus;
-    await _dbContext.SaveChangesAsync();
-    
-    return ServiceResult<EmptyResponse>.Ok(null!);
-}
+Il service riceve solo i parametri di business, senza `userRole`:
 
-private bool IsTransitionAllowed(ShipmentStatus current, ShipmentStatus next, string userRole)
-{
-    // Esempio: Solo ShippingManager può mettere in Pianificata
-    if (next == ShipmentStatus.Pianificata && userRole != "ShippingManager")
-        return false;
-    
-    // Aggiungere altre regole di transizione
-    return true;
-}
+```csharp
+Task<ServiceResult<ShipmentResponseDto>> ValidateShipment(Guid shipmentId, ValidateShipmentRequestDto request);
 ```
 
-**Riassunto:**
-- **Service**: Conosce la logica aziendale (chi può fare cosa)
-- **Controller**: Conosce l'utente (estrae il ruolo dai claims) e lo comunica al service
+#### 3. Leggere il ruolo nel controller (quando serve passarlo)
+
+Usare `User.FindFirstValue(ClaimTypes.Role)` — non leggere il claim grezzo Firebase `"role"`.
+
+```csharp
+var userRole = User.FindFirstValue(ClaimTypes.Role);
+```
+
+Il token Firebase contiene `"role"` come chiave. `OnTokenValidated` lo traduce in `ClaimTypes.Role` (la chiave che ASP.NET Core usa internamente). Leggere `"role"` funziona per coincidenza, ma `ClaimTypes.Role` è coerente con il resto del framework.
 
 #### Scelta del tipo generico T
 

@@ -13,6 +13,8 @@ Stato attuale:
 - `Email` viene salvata lowercase con `ToLowerInvariant()`.
 - Nel create, se `Role` e' `Driver`, `DrivingLicenseCategory` e' obbligatoria.
 - Nell'update, se `Role` e' `Driver`, `DrivingLicenseCategory` e' obbligatoria.
+- `ServiceResult<T>` su tutta l'Employee API.
+- Controllo email duplicata con `409 Conflict`.
 
 Prossimi fix:
 
@@ -28,36 +30,7 @@ Prossimi fix:
 
    Questa scelta evita di conservare dati non piu' applicabili al ruolo.
 
-2. Sostituire `null` e `bool` con un risultato applicativo esplicito.
-
-   Le firme attuali comunicano poco:
-
-   ```csharp
-   Task<EmployeeResponseDto?> CreateEmployee(EmployeeRequestDto employeeRequest);
-   Task<bool> UpdateEmployee(Guid id, EmployeeRequestDto employeeRequest);
-   Task<bool> DeleteEmployee(Guid id);
-   ```
-
-   Meglio introdurre un risultato applicativo che distingua almeno:
-
-   - `Success`
-   - `NotFound`
-   - `ValidationError`
-   - `Conflict`
-
-   In questo modo il service comunica l'esito reale e il controller traduce verso
-   `201 Created`, `204 NoContent`, `400 BadRequest`, `404 NotFound` o `409 Conflict`.
-
-3. Aggiungere controllo email duplicata.
-
-   Prima di creare o aggiornare un employee, verificare che non esista gia' un altro
-   dipendente con la stessa email normalizzata.
-
-   Risposta consigliata:
-
-   - `409 Conflict` se la richiesta e' formalmente valida ma l'email e' gia' usata.
-
-4. Convertire gli enum come stringhe nell'API.
+2. Convertire gli enum come stringhe nell'API.
 
    In `Program.cs`, configurare `JsonStringEnumConverter` per evitare payload con
    valori numerici poco leggibili.
@@ -80,7 +53,7 @@ Prossimi fix:
    Per ora va bene convertire gli enum come stringhe solo nell'API JSON. La
    persistenza EF Core puo' continuare a usare il mapping attuale.
 
-5. Introdurre log strutturati.
+3. Introdurre log strutturati.
 
    Possibile approccio:
 
