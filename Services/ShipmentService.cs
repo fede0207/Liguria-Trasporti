@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using Liguria_Trasporti.Data;
+﻿using Liguria_Trasporti.Data;
 using Liguria_Trasporti.DTOs;
 using Liguria_Trasporti.Enums;
 using Liguria_Trasporti.Models;
@@ -26,6 +25,10 @@ public class ShipmentService(AppDbContext dbContext) : IShipmentService
             ProposedVehicleId = s.ProposedVehicleId,
             AssignedDriverId = s.AssignedDriverId,
             AssignedVehicleId = s.AssignedVehicleId,
+            DriverRouteId = s.DriverRouteId,
+            Note = s.Note,
+            Priority = s.Priority,
+            Status = s.Status
         }).ToList();
         return ServiceResult<IEnumerable<ShipmentResponseDto>>.Ok(response);
     }

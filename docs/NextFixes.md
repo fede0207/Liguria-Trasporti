@@ -13,47 +13,19 @@ Stato attuale:
 - `Email` viene salvata lowercase con `ToLowerInvariant()`.
 - Nel create, se `Role` e' `Driver`, `DrivingLicenseCategory` e' obbligatoria.
 - Nell'update, se `Role` e' `Driver`, `DrivingLicenseCategory` e' obbligatoria.
+- Nell'update, se `Role` non e' `Driver`, `DrivingLicenseCategory` viene azzerata a `null`.
 - `ServiceResult<T>` su tutta l'Employee API.
 - Controllo email duplicata con `409 Conflict`.
 
 Prossimi fix:
 
-1. Chiarire il comportamento della patente quando il ruolo non e' `Driver`.
+1. Valutare serializzazione enum (in sospeso).
 
-   Oggi l'update valorizza `DrivingLicenseCategory` solo quando il ruolo e'
-   `Driver`. Se un dipendente passa da `Driver` a `LogisticsOperator` o
-   `ShippingManager`, bisogna decidere se azzerare esplicitamente la patente:
+   Decisione da prendere: mantenere enum come interi (default) o convertire in stringhe
+   con `JsonStringEnumConverter`. Pro/contro documentati in DevNote sezione 5.A.
+   Chiedere conferma allo sviluppatore di riferimento prima di procedere.
 
-   ```csharp
-   employee.DrivingLicenseCategory = null;
-   ```
-
-   Questa scelta evita di conservare dati non piu' applicabili al ruolo.
-
-2. Convertire gli enum come stringhe nell'API.
-
-   In `Program.cs`, configurare `JsonStringEnumConverter` per evitare payload con
-   valori numerici poco leggibili.
-
-   ```csharp
-   builder.Services
-       .AddControllers()
-       .AddJsonOptions(options =>
-       {
-           options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-       });
-   ```
-
-   Aggiungere anche:
-
-   ```csharp
-   using System.Text.Json.Serialization;
-   ```
-
-   Per ora va bene convertire gli enum come stringhe solo nell'API JSON. La
-   persistenza EF Core puo' continuare a usare il mapping attuale.
-
-3. Introdurre log strutturati.
+2. Introdurre log strutturati.
 
    Possibile approccio:
 

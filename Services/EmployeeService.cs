@@ -3,7 +3,6 @@ using Liguria_Trasporti.Data;
 using Liguria_Trasporti.DTOs;
 using Liguria_Trasporti.Enums;
 using Liguria_Trasporti.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace Liguria_Trasporti.Services;
@@ -62,7 +61,6 @@ public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) 
             Surname = employeeRequest.Surname.Trim(),
             Email = employeeRequest.Email.ToLowerInvariant().Trim(),
             Role = employeeRequest.Role,
-            DrivingLicenseCategory = employeeRequest.DrivingLicenseCategory,
             AccountStatus = AccountStatus.Active,
             OperationalStatus = EmployeeOperationalStatus.Active
         };
@@ -80,6 +78,10 @@ public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) 
             {
                 return ServiceResult<EmployeeResponseDto>.ValidationError();
             }
+        }
+        else
+        {
+            employee.DrivingLicenseCategory = null;
         }
         
         //l'utente va prima salvato su firebase se ok -> salvo sul db

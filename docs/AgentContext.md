@@ -67,30 +67,47 @@ File principali:
 - `DTOs/EmployeeResponseDto.cs`
 - `Models/Employee.cs`
 
-Stato attuale:
+Stato attuale (completo):
 
-- `GET all`
-- `GET by id`
-- `POST create`
-- `PUT update`
-- `DELETE remove`
-- `CreatedAtRoute` nel create verso la route nominata `GetEmployeeById`
-- `204 NoContent` per update/delete riusciti
+- `GET all` — ritorna lista di `EmployeeResponseDto`
+- `GET by id` — route nominata `GetEmployeeById`, `404` se non trovato
+- `POST create` — `201 Created` con `CreatedAtRoute`, `409 Conflict` su email duplicata, `400` su validazione
+- `PUT update` — `204 NoContent`, `404`, `409 Conflict`, `400` su validazione
+- `DELETE remove` — `204 NoContent`, `404` se non trovato
 - trim di `Name`, `Surname`, `Email` nel create/update
 - normalizzazione email con `ToLowerInvariant()`
-- patente obbligatoria nel create quando `Role` e' `Driver`
-- patente obbligatoria nell'update quando `Role` e' `Driver`
-- protezione `[Authorize]` su `GET by id`, `PUT` e `DELETE`
-- `[ApiController]` e route base sul controller
+- patente obbligatoria nel create/update quando `Role` e' `Driver`
+- patente azzerata a `null` nel create/update quando `Role` non e' `Driver`
+- `ServiceResult<T>` su tutta l'Employee API
+- controllo email duplicata con `409 Conflict`
+- autorizzazione `[Authorize(Roles = "EmployeeManager")]` sull'intero controller
+- Firebase: crea utente, assegna custom claim `role`, rollback se DB fallisce
+
+## Stato Shipment API
+
+File principali:
+
+- `Controllers/ShipmentController.cs`
+- `Services/IShipmentService.cs`
+- `Services/ShipmentService.cs`
+- `DTOs/ShipmentRequestDto.cs`
+- `DTOs/ShipmentResponseDto.cs`
+- `DTOs/ValidateShipmentRequestDto.cs`
+- `Models/Shipment.cs`
+
+Stato attuale (completo):
+
+- `GET all` — ritorna lista di `ShipmentResponseDto`
+- `GET by id` — `404` se non trovato
+- `POST create` — `201 Created`, accessibile a `LogisticOperator` e `ShippingManager`
+- `PATCH {id}/status` — valida spedizione, assegna autista e mezzo, passa a `Planned`; solo `ShippingManager`
+- `ServiceResult<T>` su tutta la Shipment API
+- autorizzazione solo nel controller tramite `[Authorize(Roles = "...")]`
+- controllo stato spedizione (`InPlanning`) prima di validare
+- controllo autista: deve esistere e avere ruolo `Driver`
+- controllo veicolo: in attesa della tabella `Vehicles`
 
 Problemi/cleanup da fare sono documentati in `docs/NextFixes.md`.
-In particolare restano:
-
-- decidere se azzerare `DrivingLicenseCategory` quando il ruolo aggiornato non e' `Driver`;
-- sostituire `null`/`bool` dai service con un risultato applicativo esplicito;
-- aggiungere controllo email duplicata;
-- convertire gli enum come stringhe nell'API JSON;
-- introdurre log strutturati, probabilmente con Serilog.
 
 ## Promemoria prossima sessione
 

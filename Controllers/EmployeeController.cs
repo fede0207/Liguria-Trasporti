@@ -24,6 +24,10 @@ public class EmployeeController(IEmployeeService employeeService) : ControllerBa
     public async Task<ActionResult<EmployeeResponseDto>> CreateEmployee(EmployeeRequestDto employeeRequest)
     {
         var result = await _employeeService.CreateEmployee(employeeRequest);
+        if (result.Status is ServiceResultStatus.Conflict)
+        {
+            return Conflict();
+        }
         if (result.Status is ServiceResultStatus.ValidationError)
         {
             return BadRequest();

@@ -17,7 +17,7 @@ public class ShipmentController(IShipmentService shipmentService) : ControllerBa
     public async Task<IActionResult> GetAll()
     {
         var result = await _shipmentService.GetAllShipments();
-        return Ok(result);
+        return Ok(result.Data);
     }
 
     [HttpGet("{id:Guid}")]
@@ -28,7 +28,7 @@ public class ShipmentController(IShipmentService shipmentService) : ControllerBa
         {
             return NotFound();
         }
-        return Ok(result);
+        return Ok(result.Data);
     }
     
     [HttpPost]
@@ -49,9 +49,9 @@ public class ShipmentController(IShipmentService shipmentService) : ControllerBa
         var result = await _shipmentService.ValidateShipment(shipmentId, shipmentRequest);
         return result.Status switch
         {
-            ServiceResultStatus.Success => Ok(result),
+            ServiceResultStatus.Success => Ok(result.Data),
             ServiceResultStatus.NotFound => NotFound(), 
-            ServiceResultStatus.ValidationError => BadRequest(result),
+            ServiceResultStatus.ValidationError => BadRequest(result.Data),
             _ => StatusCode(500, "An unexpected error occurred.")
         };
     }
