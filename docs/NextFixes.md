@@ -16,25 +16,34 @@ Stato attuale:
 - Nell'update, se `Role` non e' `Driver`, `DrivingLicenseCategory` viene azzerata a `null`.
 - `ServiceResult<T>` su tutta l'Employee API.
 - Controllo email duplicata con `409 Conflict`.
+- `FirebaseId` salvato come `string` nel DB e nel modello.
 
 Prossimi fix:
 
-1. Valutare serializzazione enum (in sospeso).
+1. Ripristinare `[Authorize(Roles = "EmployeeManager")]` su `CreateEmployee` nel controller
+   (attualmente `[AllowAnonymous]` per seed temporaneo).
 
-   Decisione da prendere: mantenere enum come interi (default) o convertire in stringhe
-   con `JsonStringEnumConverter`. Pro/contro documentati in DevNote sezione 5.A.
-   Chiedere conferma allo sviluppatore di riferimento prima di procedere.
+2. Implementare controllo account disabilitato in `OnTokenValidated` in `Program.cs`.
+   Leggere `FirebaseId` dal claim `sub` (`ClaimTypes.NameIdentifier`), cercare l'employee nel DB
+   e chiamare `context.Fail(...)` se `AccountStatus` e' `Disabled`.
 
-2. Introdurre log strutturati.
+## Customer API
 
-   Possibile approccio:
+Stato attuale:
 
-   - usare Serilog per request logging HTTP globale;
-   - loggare nel service eventi applicativi come creazione, update, delete,
-     employee non trovato, email duplicata, driver senza patente;
-   - non usare il log come meccanismo di controllo del flusso;
-   - lasciare al risultato applicativo il compito di dire al controller quale
-     risposta HTTP restituire.
+- `GET all` e `GET by id` implementati.
+- `POST create` implementato con controllo email e phone duplicati.
+- `ICustomerService` non ha ancora tutti i metodi (`CreateCustomer` manca dall'interfaccia).
+- `ICustomerService` non registrato in `Program.cs`.
+
+Prossimi fix:
+
+1. Aggiungere `CreateCustomer` all'interfaccia `ICustomerService`.
+2. Registrare `ICustomerService` in `Program.cs`.
+3. Normalizzare `Email` e `PhoneNumber` prima dei controlli duplicati e del salvataggio.
+4. Rimuovere `using Microsoft.AspNetCore.Http.HttpResults` non usato in `CustomerService`.
+5. Creare `CustomerController`.
+6. Aggiungere metodi `UpdateCustomer` e `DeleteCustomer`.
 
 ## Validazione
 
