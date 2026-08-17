@@ -31,18 +31,28 @@ public class ShipmentController(IShipmentService shipmentService) : ControllerBa
         return Ok(result);
     }
     
+    [HttpPost]
     public async Task<IActionResult> CreateShipment(ShipmentRequestDto shipmentRequest)
     {
-        var userRole = User.Claims.FirstOrDefault(x => x.Type == "role")?.Value;
-        var result = await _shipmentService.CreateShipment(shipmentRequest, userRole!);
-        if (result.Status is ServiceResultStatus.Unauthorized)
-        {
-            return Unauthorized();
-        }
+        var result = await _shipmentService.CreateShipment(shipmentRequest);
         if (result.Status is ServiceResultStatus.ValidationError)
         {
             return BadRequest();
         }
         return CreatedAtAction(nameof(GetById), new { id = result.Data!.Id }, result.Data);
+    }
+
+    [Authorize(Roles = "ShippingManager")]
+    [HttpPatch("{shipmentId:Guid}/status")]
+    public async Task<IActionResult> ValidateShipmentStatus(Guid shipmentId, ValidateShipmentRequestDto shipmentRequest)
+    {
+        var result = await _shipmentService.ValidateShipment(shipmentId, shipmentRequest);
+        return result.Status switch
+        {
+            ServiceResultStatus.Success => Ok(result),
+            ServiceResultStatus.NotFound => NotFound(), 
+            ServiceResultStatus.ValidationError => BadRequest(result),
+            _ => StatusCode(500, "An unexpected error occurred.")
+        };
     }
 }

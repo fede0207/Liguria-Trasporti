@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using FirebaseAdmin;
 using FirebaseAdmin.Auth;
 using Google.Apis.Auth.OAuth2;
@@ -46,7 +47,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         if (roleClaim != null)
         {
             var identity = context.Principal.Identity as System.Security.Claims.ClaimsIdentity;
-            identity?.AddClaim(new System.Security.Claims.Claim("role", roleClaim.Value));
+            identity?.AddClaim(new Claim(ClaimTypes.Role, roleClaim.Value));
         }
         
         return Task.CompletedTask;

@@ -11,10 +11,23 @@ public class ShipmentService(AppDbContext dbContext) : IShipmentService
 {
     private readonly AppDbContext _dbContext = dbContext;
 
-    public async Task<ServiceResult<IEnumerable<Shipment>>> GetAllShipments()
+    public async Task<ServiceResult<IEnumerable<ShipmentResponseDto>>> GetAllShipments()
     {
         var shipments = await _dbContext.Shipments.ToListAsync();
-        return ServiceResult<IEnumerable<Shipment>>.Ok(shipments);
+        var response = shipments.Select(s => new ShipmentResponseDto()
+        {
+            Id = s.Id,
+            CustomerId = s.CustomerId,
+            OriginAddressId = s.OriginAddressId,
+            DestinationAddressId = s.DestinationAddressId,
+            PlannedDeliveryDate = s.PlannedDeliveryDate,
+            DeliveredAt = s.DeliveredAt,
+            ProposedDriverId = s.ProposedDriverId,
+            ProposedVehicleId = s.ProposedVehicleId,
+            AssignedDriverId = s.AssignedDriverId,
+            AssignedVehicleId = s.AssignedVehicleId,
+        }).ToList();
+        return ServiceResult<IEnumerable<ShipmentResponseDto>>.Ok(response);
     }
 
     public async Task<ServiceResult<ShipmentResponseDto>> GetShipmentById(Guid id)
@@ -46,12 +59,8 @@ public class ShipmentService(AppDbContext dbContext) : IShipmentService
         return ServiceResult<ShipmentResponseDto>.Ok(response);
     }
     
-    public async Task<ServiceResult<ShipmentResponseDto>> CreateShipment(ShipmentRequestDto shipmentRequest, string userRole)
+    public async Task<ServiceResult<ShipmentResponseDto>> CreateShipment(ShipmentRequestDto shipmentRequest)
     {
-        if (!CanCreateShipment(userRole))
-        {
-            return ServiceResult<ShipmentResponseDto>.Unauthorized(null!);
-        }
         var shipment = new Shipment()
         {
             Id = Guid.NewGuid(),
@@ -90,14 +99,8 @@ public class ShipmentService(AppDbContext dbContext) : IShipmentService
         return ServiceResult<ShipmentResponseDto>.Ok(response);
     }
 
-    public async Task<ServiceResult<ShipmentResponseDto>> ValidateShipment(Guid shipmentId, ValidateShipmentRequestDto shipmentRequest,
-        string userRole)
+    public async Task<ServiceResult<ShipmentResponseDto>> ValidateShipment(Guid shipmentId, ValidateShipmentRequestDto shipmentRequest)
     {
-        if (!CanValidateShipment(userRole))
-        {
-            return ServiceResult<ShipmentResponseDto>.Unauthorized(null!);
-        }
-        
         var shipment = await _dbContext.Shipments.FindAsync(shipmentId);
         if (shipment is null)
         {
@@ -124,6 +127,8 @@ public class ShipmentService(AppDbContext dbContext) : IShipmentService
             return ServiceResult<ShipmentResponseDto>.NotFound(null!);
         }
         
+        //Manca il controllo sul veicolo.
+        
         shipment.AssignedDriverId = shipmentRequest.AssignedDriverId;
         shipment.AssignedVehicleId = shipmentRequest.AssignedVehicleId;
         shipment.Status = ShipmentStatus.Planned;
@@ -149,32 +154,6 @@ public class ShipmentService(AppDbContext dbContext) : IShipmentService
         };
         
         return ServiceResult<ShipmentResponseDto>.Ok(response);
-    }
-    
-    private bool CanCreateShipment(string userRole)
-    {
-        if (Enum.TryParse<EmployeeRole>(userRole, true, out var role))
-        {
-            if (role is not EmployeeRole.EmployeeManager and not EmployeeRole.LogisticOperator)
-            {
-                return false;
-            }
-            return true;
-        }
-        return false;
-    }
-
-    private bool CanValidateShipment(string userRole)
-    {
-        if (Enum.TryParse<EmployeeRole>(userRole, true, out var role))
-        {
-            if (role is not EmployeeRole.ShippingManager)
-            {
-                return false;
-            }
-            return true;
-        }
-        return false;
     }
     
     private bool ValidateDriver(Guid? driverId)

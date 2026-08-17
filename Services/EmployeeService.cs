@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace Liguria_Trasporti.Services;
-[Authorize]
+
 public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) : IEmployeeService
 {
     private readonly AppDbContext _dbContext = dbContext;
@@ -81,19 +81,32 @@ public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) 
                 return ServiceResult<EmployeeResponseDto>.ValidationError();
             }
         }
-
-        await _dbContext.AddAsync(employee);
-        await _dbContext.SaveChangesAsync();
-
-        var userRecord = await _firebaseAuth.CreateUserAsync(new UserRecordArgs()
-        {
-            Email = employee.Email,
-            Password = "temporary123."
-        });
         
-        var claims = new Dictionary<string, object> {{"role", employee.Role.ToString()}};
-        await _firebaseAuth.SetCustomUserClaimsAsync(userRecord.Uid, claims);
+        //l'utente va prima salvato su firebase se ok -> salvo sul db
+        //se fallisce -> fermo e cancello l'utente da firebase
+        UserRecord? userRecord = null;
             
+        try
+        {
+            userRecord = await _firebaseAuth.CreateUserAsync(new UserRecordArgs()
+            {
+                Email = employee.Email,
+                Password = "temporary123."
+            });
+            var claims = new Dictionary<string, object> {{"role", employee.Role.ToString()}};
+            await _firebaseAuth.SetCustomUserClaimsAsync(userRecord.Uid, claims);
+            await _dbContext.AddAsync(employee);
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            if (userRecord is not null)
+            {
+                await _firebaseAuth.DeleteUserAsync(userRecord.Uid);
+            }
+            throw new Exception("Errore durante la creazione dell'utente su Firebase o sul database", ex);
+        }
+        
         var employeeResponse = new EmployeeResponseDto()
         {
             Id = employee.Id,
