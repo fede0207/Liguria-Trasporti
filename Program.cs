@@ -3,10 +3,9 @@ using FirebaseAdmin;
 using FirebaseAdmin.Auth;
 using Google.Apis.Auth.OAuth2;
 using Liguria_Trasporti.Data;
-using Liguria_Trasporti.Models;
+using Liguria_Trasporti.Enums;
 using Liguria_Trasporti.Services.Shipments;
 using Liguria_Trasporti.Services.Employers;
-using Liguria_Trasporti.Services.Customers;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -46,13 +45,38 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     options.Events.OnTokenValidated = context =>
     {
         // Additional validation can be done here if needed
-        var roleClaim = context.Principal.Claims.FirstOrDefault(c => c.Type == "role");
-        if (roleClaim != null)
+        var roleClaim = context.Principal!.Claims.FirstOrDefault(c => c.Type == "role");
+        if (roleClaim is not null)
         {
-            var identity = context.Principal.Identity as System.Security.Claims.ClaimsIdentity;
-            identity?.AddClaim(new Claim(ClaimTypes.Role, roleClaim.Value));
+            var identity = context.Principal.Identity as ClaimsIdentity;
+            if (identity is null)
+            {
+                context.Fail("Identity is null.");
+                return Task.CompletedTask;
+            }
+            if (!identity.HasClaim(c => c.Type == ClaimTypes.Role))
+            {
+                identity.AddClaim(new Claim(ClaimTypes.Role, roleClaim.Value));
+            }
         }
         
+        var firebaseId = context.Principal.Claims.FirstOrDefault(c => c.Type == "sub");
+        if (firebaseId is not null)
+        {
+            var dbContext = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();     
+            var employee = dbContext.Employees.FirstOrDefault(e => e.FirebaseId == firebaseId.Value);
+            if (employee is null)
+            {
+                context.Fail("Employee does not exist.");
+                return Task.CompletedTask;
+            }
+            if (employee.AccountStatus is AccountStatus.Disabled)
+            {
+                context.Fail("Account is disabled.");
+                return Task.CompletedTask;
+            }
+        }
+        else context.Fail("Firebase ID claim is missing.");
         return Task.CompletedTask;
     };
 });

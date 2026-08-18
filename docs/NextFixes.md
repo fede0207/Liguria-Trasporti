@@ -20,9 +20,6 @@ Stato attuale:
 
 Prossimi fix:
 
-1. Ripristinare `[Authorize(Roles = "EmployeeManager")]` su `CreateEmployee` nel controller
-   (attualmente `[AllowAnonymous]` per seed temporaneo).
-
 2. Implementare controllo account disabilitato in `OnTokenValidated` in `Program.cs`.
    Leggere `FirebaseId` dal claim `sub` (`ClaimTypes.NameIdentifier`), cercare l'employee nel DB
    e chiamare `context.Fail(...)` se `AccountStatus` e' `Disabled`.
