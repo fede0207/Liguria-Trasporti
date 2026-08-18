@@ -5,7 +5,7 @@ using Liguria_Trasporti.Enums;
 using Liguria_Trasporti.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Liguria_Trasporti.Services.Employers;
+namespace Liguria_Trasporti.Services.Employees;
 
 public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) : IEmployeeService
 {
@@ -18,6 +18,7 @@ public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) 
         var employees = list.Select(e => new EmployeeResponseDto()
         {
             Id = e.Id,
+            FirebaseId =  e.FirebaseId,
             Name = e.Name,
             Surname = e.Surname,
             Email = e.Email,
@@ -135,6 +136,7 @@ public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) 
         employee.Surname = employeeRequest.Surname.Trim();
         employee.Email = employeeRequest.Email.ToLowerInvariant().Trim();
         employee.Role = employeeRequest.Role;
+        employee.AccountStatus = employeeRequest.AccountStatus;
         
         var mailExists = await _dbContext.Employees.AnyAsync(e => e.Email == employee.Email && e.Id != employee.Id);
         if (mailExists)
@@ -179,5 +181,41 @@ public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) 
         _dbContext.Employees.Remove(employee);
         await _dbContext.SaveChangesAsync();
         return ServiceResult<EmptyResponse>.Ok(null!);
+    }
+
+    public async Task<ServiceResult<EmployeeResponseDto?>> BackfillFirebaseIds(string userEmail)
+    {
+        Dictionary<string, string> usersData = new();
+        var users =  _firebaseAuth.ListUsersAsync(null);
+        
+        await foreach (var user in users)
+        {
+            var firebaseId = user.Uid;
+            var firebaseEmail = user.Email.ToLowerInvariant().Trim();
+            usersData.Add(firebaseEmail, firebaseId);
+        }
+
+        if (usersData.ContainsKey(userEmail))
+        {
+            var employer = await _dbContext.Employees.FirstOrDefaultAsync(e => e.Email == userEmail);
+            if (employer is null)
+            {
+                return ServiceResult<EmployeeResponseDto?>.NotFound(null);
+            }
+            var id = usersData.GetValueOrDefault(userEmail.ToLowerInvariant().Trim());
+            employer.FirebaseId = id;
+            var response = new EmployeeResponseDto()
+            {
+                Id = employer.Id,
+                FirebaseId = employer.FirebaseId,
+                Name = employer.Name,
+                Surname = employer.Surname,
+                Email = employer.Email,
+                Role = employer.Role
+            };
+            await _dbContext.SaveChangesAsync();
+            return ServiceResult<EmployeeResponseDto?>.Ok(response);
+        }
+        return ServiceResult<EmployeeResponseDto?>.NotFound(null);
     }
 }

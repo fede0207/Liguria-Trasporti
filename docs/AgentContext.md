@@ -46,23 +46,46 @@ docker compose up -d
 - La normalizzazione input va fatta esplicitamente nel service o nel mapping DTO -> entity.
 - Per email conviene salvare `Trim().ToLowerInvariant()`.
 - Regole di business e controlli su database devono stare nei servizi applicativi o nel dominio, non nei controller.
+- Autorizzazione per ruolo solo nel controller tramite `[Authorize(Roles = "...")]` — il service non riceve `userRole`.
+- `ClaimTypes.Role` per leggere il ruolo nei controller, non il claim grezzo Firebase `"role"`.
+- Per UID Firebase nel token usare il claim `sub` (canonico JWT/Firebase) in `OnTokenValidated`.
+- In `OnTokenValidated` applicare gate applicativo: `FirebaseId` presente, employee esistente, `AccountStatus != Disabled`; in caso contrario `context.Fail(...)`.
+- Services e DTOs organizzati in sottocartelle per feature (`Customers`, `Employers`, `Shipments`).
+
+## Struttura cartelle
+
+```
+Controllers/
+DTOs/
+  Customer/
+  (Employee e Shipment ancora nella root DTOs)
+Services/
+  Customers/
+  Employers/
+  Shipments/
+Models/
+Enums/
+Data/
+Migrations/
+Authentication/
+```
 
 ## Stato Employee API
 
 File principali:
 
 - `Controllers/EmployeeController.cs`
-- `Services/IEmployeeService.cs`
-- `Services/EmployeeService.cs`
+- `Services/Employers/IEmployeeService.cs`
+- `Services/Employers/EmployeeService.cs`
 - `DTOs/EmployeeRequestDto.cs`
 - `DTOs/EmployeeResponseDto.cs`
 - `Models/Employee.cs`
 
-Stato attuale (completo):
+Stato attuale (completo salvo fix pendenti in NextFixes.md):
 
 - `GET all` — ritorna lista di `EmployeeResponseDto`
 - `GET by id` — route nominata `GetEmployeeById`, `404` se non trovato
-- `POST create` — `201 Created` con `CreatedAtRoute`, `409 Conflict` su email duplicata, `400` su validazione
+- `POST create` — `201 Created` con `CreatedAtRoute`, `409 Conflict` su email duplicata, `400` su validazione — **temporaneamente `[AllowAnonymous]` per seed admin**
 - `PUT update` — `204 NoContent`, `404`, `409 Conflict`, `400` su validazione
 - `DELETE remove` — `204 NoContent`, `404` se non trovato
 - trim di `Name`, `Surname`, `Email` nel create/update
@@ -73,6 +96,8 @@ Stato attuale (completo):
 - controllo email duplicata con `409 Conflict`
 - autorizzazione `[Authorize(Roles = "EmployeeManager")]` sull'intero controller
 - Firebase: crea utente, assegna custom claim `role`, rollback se DB fallisce
+- `FirebaseId` salvato come `string` (uid Firebase)
+- Middleware auth: mappa claim Firebase `"role"` in `ClaimTypes.Role` solo se non gia' presente
 
 ## Stato Shipment API
 

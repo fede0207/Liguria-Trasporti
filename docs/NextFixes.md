@@ -18,12 +18,6 @@ Stato attuale:
 - Controllo email duplicata con `409 Conflict`.
 - `FirebaseId` salvato come `string` nel DB e nel modello.
 
-Prossimi fix:
-
-2. Implementare controllo account disabilitato in `OnTokenValidated` in `Program.cs`.
-   Leggere `FirebaseId` dal claim `sub` (`ClaimTypes.NameIdentifier`), cercare l'employee nel DB
-   e chiamare `context.Fail(...)` se `AccountStatus` e' `Disabled`.
-
 ## Customer API
 
 Stato attuale:

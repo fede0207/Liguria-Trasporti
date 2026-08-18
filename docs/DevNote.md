@@ -235,6 +235,25 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 ```
 
+### Validazione utente applicativo in `OnTokenValidated`
+
+Oltre al mapping del ruolo, `OnTokenValidated` deve fare un controllo di accesso applicativo basato su database.
+
+Flusso consigliato:
+
+1. Leggere l'UID Firebase dal claim `sub` (claim canonico nei token JWT Firebase).
+2. Se il claim UID manca, chiamare `context.Fail(...)`.
+3. Risolvere `AppDbContext` da `context.HttpContext.RequestServices`.
+4. Cercare l'employee per `FirebaseId`.
+5. Se l'employee non esiste, chiamare `context.Fail(...)`.
+6. Se `AccountStatus == Disabled`, chiamare `context.Fail(...)`.
+
+Nota importante:
+
+- `Token valido Firebase` significa autenticazione tecnica riuscita.
+- Il controllo su `Employee` e `AccountStatus` è autorizzazione applicativa del dominio.
+- Dopo `context.Fail(...)`, uscire subito dal callback (`return Task.CompletedTask`) per non continuare con altra logica.
+
 ### Proteggere gli endpoint per ruolo
 
 Nel controller, usa `[Authorize(Roles = "...")]`:

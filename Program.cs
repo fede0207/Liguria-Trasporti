@@ -5,7 +5,7 @@ using Google.Apis.Auth.OAuth2;
 using Liguria_Trasporti.Data;
 using Liguria_Trasporti.Enums;
 using Liguria_Trasporti.Services.Shipments;
-using Liguria_Trasporti.Services.Employers;
+using Liguria_Trasporti.Services.Employees;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -60,23 +60,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
             }
         }
         
-        var firebaseId = context.Principal.Claims.FirstOrDefault(c => c.Type == "sub");
+        var firebaseId = context.Principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
         if (firebaseId is not null)
         {
             var dbContext = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();     
-            var employee = dbContext.Employees.FirstOrDefault(e => e.FirebaseId == firebaseId.Value);
+            var employee = dbContext.Employees.FirstOrDefault(e => e.FirebaseId == firebaseId);
             if (employee is null)
             {
                 context.Fail("Employee does not exist.");
                 return Task.CompletedTask;
             }
-            if (employee.AccountStatus is AccountStatus.Disabled)
+            if (employee!.AccountStatus is AccountStatus.Disabled)
             {
                 context.Fail("Account is disabled.");
                 return Task.CompletedTask;
             }
         }
-        else context.Fail("Firebase ID claim is missing.");
+        if (firebaseId is null)
+        {
+            context.Fail("Firebase ID claim is missing.");
+        }
         return Task.CompletedTask;
     };
 });

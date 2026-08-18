@@ -17,4 +17,5 @@ public class EmployeeRequestDto
     public string Email { get; set; } = string.Empty;
     public EmployeeRole Role { get; set; }
     public DrivingLicenseCategory? DrivingLicenseCategory { get; set; }
+    public AccountStatus AccountStatus { get; set; }
 }
