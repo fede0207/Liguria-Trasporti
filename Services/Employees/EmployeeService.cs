@@ -182,40 +182,4 @@ public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) 
         await _dbContext.SaveChangesAsync();
         return ServiceResult<EmptyResponse>.Ok(null!);
     }
-
-    public async Task<ServiceResult<EmployeeResponseDto?>> BackfillFirebaseIds(string userEmail)
-    {
-        Dictionary<string, string> usersData = new();
-        var users =  _firebaseAuth.ListUsersAsync(null);
-        
-        await foreach (var user in users)
-        {
-            var firebaseId = user.Uid;
-            var firebaseEmail = user.Email.ToLowerInvariant().Trim();
-            usersData.Add(firebaseEmail, firebaseId);
-        }
-
-        if (usersData.ContainsKey(userEmail))
-        {
-            var employer = await _dbContext.Employees.FirstOrDefaultAsync(e => e.Email == userEmail);
-            if (employer is null)
-            {
-                return ServiceResult<EmployeeResponseDto?>.NotFound(null);
-            }
-            var id = usersData.GetValueOrDefault(userEmail.ToLowerInvariant().Trim());
-            employer.FirebaseId = id;
-            var response = new EmployeeResponseDto()
-            {
-                Id = employer.Id,
-                FirebaseId = employer.FirebaseId,
-                Name = employer.Name,
-                Surname = employer.Surname,
-                Email = employer.Email,
-                Role = employer.Role
-            };
-            await _dbContext.SaveChangesAsync();
-            return ServiceResult<EmployeeResponseDto?>.Ok(response);
-        }
-        return ServiceResult<EmployeeResponseDto?>.NotFound(null);
-    }
 }
