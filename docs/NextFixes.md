@@ -2,7 +2,7 @@
 
 ## Employee API
 
-Stato attuale:
+Stato attuale (completo salvo fix pendenti):
 
 - `GET api/Employee` restituisce `EmployeeResponseDto`.
 - `GET api/Employee/{id}` ha route dedicata e nome `GetEmployeeById`.
@@ -17,6 +17,15 @@ Stato attuale:
 - `ServiceResult<T>` su tutta l'Employee API.
 - Controllo email duplicata con `409 Conflict`.
 - `FirebaseId` salvato come `string` nel DB e nel modello.
+- Autorizzazione `[Authorize(Roles = "EmployeeManager")]` su controller.
+- Firebase: crea utente con password temporanea, assegna custom claim `role`, rollback se DB fallisce.
+
+Prossimi fix funzionali:
+
+1. **GetEmployeeById non restituisce FirebaseId** — aggiungere `FirebaseId` alla response in `EmployeeService.cs:42-53`.
+2. **DeleteEmployee non elimina da Firebase** — aggiungere cancellazione dell'utente Firebase nel metodo `DeleteEmployee`.
+3. **UpdateEmployee non sincronizza Firebase se email cambia** — sincronizzare email su Firebase se modificata nel PUT.
+4. **Warning null reference** — controllare il null check su `nameIdentifier` nel controller linea 27, gestire il caso edge.
 
 ## Customer API
 

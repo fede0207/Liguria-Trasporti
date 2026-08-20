@@ -18,7 +18,6 @@ public class ShipmentResponseDto
     public Guid? AssignedDriverId { get; set; }
     public Guid? AssignedVehicleId { get; set; }
     public Guid? DriverRouteId { get; set; }
-    [MaxLength(255)]
     public string? Note { get; set; }
 
     public ShipmentPriority Priority { get; set; } = ShipmentPriority.Medium;
