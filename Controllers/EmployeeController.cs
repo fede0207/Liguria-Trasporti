@@ -25,6 +25,10 @@ public class EmployeeController(IEmployeeService employeeService) : ControllerBa
     public async Task<ActionResult<EmployeeResponseDto>> CreateEmployee(EmployeeRequestDto employeeRequest)
     {
         var nameIdentifier =  User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(nameIdentifier))
+        {
+            return Unauthorized("Firebase ID is missing from token.");
+        }
         
         var result = await _employeeService.CreateEmployee(employeeRequest, nameIdentifier);
         if (result.Status is ServiceResultStatus.Conflict)

@@ -42,6 +42,7 @@ public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) 
         var employee = new EmployeeResponseDto()
         {
             Id = resource.Id,
+            FirebaseId = resource.FirebaseId,
             Name = resource.Name,
             Surname = resource.Surname,
             Email = resource.Email,
@@ -157,6 +158,20 @@ public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) 
             employee.DrivingLicenseCategory = null;
         }
         
+        var firebaseUser = await _firebaseAuth.GetUserAsync(employee.FirebaseId);
+        if (firebaseUser is null)
+        {
+            return ServiceResult<EmployeeResponseDto?>.Conflict(null);
+        }
+        
+        if (employeeRequest.Email != firebaseUser.Email)
+        {
+            await _firebaseAuth.UpdateUserAsync(new UserRecordArgs()
+            {
+                Email = employeeRequest.Email
+            });
+        }
+        
         await _dbContext.SaveChangesAsync();
         return ServiceResult<EmployeeResponseDto?>.Ok(new EmployeeResponseDto()
         {
@@ -178,7 +193,10 @@ public class EmployeeService(AppDbContext dbContext, FirebaseAuth firebaseAuth) 
         {
             return ServiceResult<EmptyResponse>.NotFound(null!);
         }
+        var firebaseId = employee.FirebaseId;
         _dbContext.Employees.Remove(employee);
+        _firebaseAuth.DeleteUserAsync(firebaseId).Wait();
+        
         await _dbContext.SaveChangesAsync();
         return ServiceResult<EmptyResponse>.Ok(null!);
     }

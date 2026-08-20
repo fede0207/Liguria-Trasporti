@@ -50,7 +50,7 @@ docker compose up -d
 - `ClaimTypes.Role` per leggere il ruolo nei controller, non il claim grezzo Firebase `"role"`.
 - Per UID Firebase nel token usare il claim `sub` (canonico JWT/Firebase) in `OnTokenValidated`.
 - In `OnTokenValidated` applicare gate applicativo: `FirebaseId` presente, employee esistente, `AccountStatus != Disabled`; in caso contrario `context.Fail(...)`.
-- Services e DTOs organizzati in sottocartelle per feature (`Customers`, `Employers`, `Shipments`).
+- Services e DTOs organizzati in sottocartelle per feature (`Customers`, `Employees`, `Shipments`).
 
 ## Struttura cartelle
 
@@ -61,7 +61,7 @@ DTOs/
   (Employee e Shipment ancora nella root DTOs)
 Services/
   Customers/
-  Employers/
+  Employees/
   Shipments/
 Models/
 Enums/
@@ -75,19 +75,19 @@ Authentication/
 File principali:
 
 - `Controllers/EmployeeController.cs`
-- `Services/Employers/IEmployeeService.cs`
-- `Services/Employers/EmployeeService.cs`
+- `Services/Employees/IEmployeeService.cs`
+- `Services/Employees/EmployeeService.cs`
 - `DTOs/EmployeeRequestDto.cs`
 - `DTOs/EmployeeResponseDto.cs`
 - `Models/Employee.cs`
 
-Stato attuale (completo salvo fix pendenti in NextFixes.md):
+Stato attuale (completo):
 
 - `GET all` — ritorna lista di `EmployeeResponseDto`
-- `GET by id` — route nominata `GetEmployeeById`, `404` se non trovato
-- `POST create` — `201 Created` con `CreatedAtRoute`, `409 Conflict` su email duplicata, `400` su validazione — **temporaneamente `[AllowAnonymous]` per seed admin**
-- `PUT update` — `204 NoContent`, `404`, `409 Conflict`, `400` su validazione
-- `DELETE remove` — `204 NoContent`, `404` se non trovato
+- `GET by id` — route nominata `GetEmployeeById`, restituisce `FirebaseId`, `404` se non trovato
+- `POST create` — `201 Created` con `CreatedAtRoute`, `409 Conflict` su email duplicata, `400` su validazione, `401 Unauthorized` se manca Firebase ID
+- `PUT update` — `204 NoContent`, `404`, `409 Conflict` su email duplicata, `400` su validazione, sincronizza email su Firebase se cambia
+- `DELETE remove` — `204 NoContent`, `404` se non trovato, rimuove utente sia da DB che da Firebase
 - trim di `Name`, `Surname`, `Email` nel create/update
 - normalizzazione email con `ToLowerInvariant()`
 - patente obbligatoria nel create/update quando `Role` e' `Driver`
@@ -95,9 +95,10 @@ Stato attuale (completo salvo fix pendenti in NextFixes.md):
 - `ServiceResult<T>` su tutta l'Employee API
 - controllo email duplicata con `409 Conflict`
 - autorizzazione `[Authorize(Roles = "EmployeeManager")]` sull'intero controller
-- Firebase: crea utente, assegna custom claim `role`, rollback se DB fallisce
+- Firebase: crea utente con password temporanea, assegna custom claim `role`, rollback se DB fallisce
 - `FirebaseId` salvato come `string` (uid Firebase)
 - Middleware auth: mappa claim Firebase `"role"` in `ClaimTypes.Role` solo se non gia' presente
+- null check su `nameIdentifier` nel CreateEmployee
 
 ## Stato Shipment API
 

@@ -22,9 +22,6 @@ Stato attuale (completo salvo fix pendenti):
 
 Prossimi fix funzionali:
 
-1. **GetEmployeeById non restituisce FirebaseId** — aggiungere `FirebaseId` alla response in `EmployeeService.cs:42-53`.
-2. **DeleteEmployee non elimina da Firebase** — aggiungere cancellazione dell'utente Firebase nel metodo `DeleteEmployee`.
-3. **UpdateEmployee non sincronizza Firebase se email cambia** — sincronizzare email su Firebase se modificata nel PUT.
 4. **Warning null reference** — controllare il null check su `nameIdentifier` nel controller linea 27, gestire il caso edge.
 
 ## Customer API
